@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import { configDotenv } from 'dotenv';
 
 const app = express();
-const PORT = process.env.PORT || 5000; // Use the environment variable for PORT
+const PORT = 5000;
 
 // Middleware
 configDotenv();
@@ -47,3 +47,6 @@ app.post('/api/contact', async (req, res) => {
 
 // Export the app to be used by Vercel
 export default app;
+// app.listen(PORT, () => {
+//     console.log(`Server is running on port http://localhost:${PORT}`)
+// })
