@@ -4,21 +4,53 @@ import mongoose from 'mongoose';
 import { configDotenv } from 'dotenv';
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 configDotenv();
 app.use(express.json());
 app.use(cors());
 
-// MongoDB connection
-mongoose.connect(`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0.xjdofai.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`)
-    .then(() => console.log("MongoDb connected successfully!"))
-    .catch((err) => console.log("Error connecting to MongoDB", err));
+// MongoDB connection (with fixes)
+let isConnected;
+
+async function connectDB() {
+    if (isConnected) {
+        console.log('Using existing database connection');
+        return;
+    }
+    console.log('Creating new database connection');
+    try {
+        const db = await mongoose.connect(
+            `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0.xjdofai.mongodb.net/?retryWrites=true&w=majority&serverSelectionTimeoutMS=30000`
+        );
+        isConnected = db.connections[0].readyState;
+        console.log('MongoDB connected successfully!');
+    } catch (error) {
+        console.error('Error connecting to MongoDB:', error);
+    }
+}
+
+// Ensure database connection for every request
+app.use(async (req, res, next) => {
+    await connectDB();
+    next();
+});
+
+// Debugging connection
+mongoose.connection.on('connected', () => {
+    console.log('Mongoose connected to DB');
+});
+mongoose.connection.on('error', (err) => {
+    console.log('Mongoose connection error:', err);
+});
+mongoose.connection.on('disconnected', () => {
+    console.log('Mongoose disconnected');
+});
 
 // Routes
 app.get("/", (req, res) => {
-    res.send("Golden willows server!");
+    res.send("Golden Willows server!");
 });
 
 // Contact Schema and Model
@@ -26,7 +58,7 @@ const contactSchema = new mongoose.Schema({
     fullName: { type: String, required: true },
     projectName: { type: String },
     unit: { type: String },
-    phone: { type: String, required: true }
+    phone: { type: String, required: true },
 });
 
 const Contact = mongoose.model('Contact', contactSchema);
@@ -45,8 +77,10 @@ app.post('/api/contact', async (req, res) => {
     }
 });
 
-// Export the app to be used by Vercel
+// Start server
+app.listen(PORT, () => {
+    console.log(`Server is running on port http://localhost:${PORT}`);
+});
+
+// Export for serverless deployment (uncomment this for Vercel deployment)
 export default app;
-// app.listen(PORT, () => {
-//     console.log(`Server is running on port http://localhost:${PORT}`)
-// })
