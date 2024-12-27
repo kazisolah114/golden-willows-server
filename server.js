@@ -11,7 +11,7 @@ configDotenv();
 app.use(express.json());
 app.use(cors());
 
-// MongoDB connection (with fixes)
+// MongoDB connection
 let isConnected;
 
 async function connectDB() {
